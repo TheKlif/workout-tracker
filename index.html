@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+
+  <!--
+    viewport meta tag: tells mobile browsers not to zoom out.
+    width=device-width  → match the screen's actual width
+    initial-scale=1.0   → don't zoom in or out on load
+    user-scalable=no    → prevent pinch-zoom (feels more app-like)
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+
+  <!--
+    apple-mobile-web-app tags: when someone saves this page to their iPhone/iPad
+    home screen, these make it behave like a native app (fullscreen, no browser UI).
+    Works similarly on Android with Chrome's "Add to Home Screen" feature.
+  -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <title>Workout Tracker</title>
+
+  <!--
+    Google Fonts loaded from CDN (Content Delivery Network).
+    CDN = someone else's server hosts the file; your browser fetches it.
+    Bebas Neue  → display/heading font, all-caps condensed
+    Space Mono  → monospace font, used for labels and tags
+    DM Sans     → clean sans-serif for body text
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ============================================================
+       CSS CUSTOM PROPERTIES (VARIABLES)
+       Defined on :root so every element in the page can use them.
+       var(--name) references them anywhere in the CSS.
+    ============================================================ */
+    :root {
+      --bg:         #0F0F0F;   /* page background */
+      --surface:    #181818;   /* card background */
+      --border:     #242424;   /* default border */
+      --border-mid: #2A2A2A;   /* slightly lighter border */
+      --text:       #E8E8E8;   /* primary text */
+      --muted:      #888888;   /* secondary text */
+      --dim:        #555555;   /* placeholder/label text */
+      --dimmer:     #444444;   /* even quieter text */
+
+      --orange:     #FF6B35;   /* rowing accent */
+      --blue:       #3B9EFF;   /* cycling accent */
+      --green:      #4CAF77;   /* walking / success accent */
+      --red:        #EF4444;   /* warning / danger */
+
+      --radius:     18px;      /* default card border radius */
+      --radius-sm:  14px;      /* button / smaller element radius */
+      --radius-pill:20px;      /* pill-shaped label radius */
+
+      --font-display: 'Bebas Neue', Impact, sans-serif;
+      --font-mono:    'Space Mono', 'Courier New', monospace;
+      --font-body:    'DM Sans', system-ui, sans-serif;
+    }
+
+    /* ============================================================
+       RESET & BASE
+       box-sizing: border-box means padding/border are included in
+       an element's stated width, not added on top of it.
+       This is almost always what you want.
+    ============================================================ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased; /* makes text look crisper on Mac/iOS */
+      min-height: 100vh;
+    }
+
+    /* ============================================================
+       LAYOUT
+       #app is the single div we render everything into.
+       All screens get swapped in and out of this div via JS.
+    ============================================================ */
+    #app {
+      max-width: 480px;        /* cap width on desktop; full-width on mobile */
+      margin: 0 auto;          /* center horizontally */
+      padding: 28px 20px 72px; /* top / sides / bottom (extra bottom for thumbs) */
+    }
+
+    /* ============================================================
+       TYPOGRAPHY UTILITY CLASSES
+    ============================================================ */
+    .font-display { font-family: var(--font-display); letter-spacing: 0.04em; line-height: 1; }
+    .font-mono    { font-family: var(--font-mono); }
+    .text-muted   { color: var(--muted); }
+    .text-dim     { color: var(--dim); }
+    .text-orange  { color: var(--orange); }
+    .text-green   { color: var(--green); }
+    .text-red     { color: var(--red); }
+    .text-blue    { color: var(--blue); }
+
+    /* ============================================================
+       CARD
+       The base visual container. Almost everything lives in one.
+    ============================================================ */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 12px;
+    }
+
+    /* Accent variants: override just the border color */
+    .card--orange { border-color: var(--orange); }
+    .card--green  { border-color: var(--green); }
+    .card--red    { border-color: var(--red); }
+    .card--blue   { border-color: var(--blue); }
+    .card--dim    { border-color: #1E1E1E; background: #141414; }
+
+    /* ============================================================
+       PILL LABELS
+       Small all-caps badge used for section labels / tags.
+    ============================================================ */
+    .pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      background: var(--border);
+      color: var(--dim);
+    }
+    .pill--orange { background: rgba(255,107,53,0.15); color: var(--orange); }
+    .pill--green  { background: rgba(76,175,119,0.15); color: var(--green); }
+    .pill--red    { background: rgba(239,68,68,0.15);  color: var(--red); }
+    .pill--blue   { background: rgba(59,158,255,0.15); color: var(--blue); }
+
+    /* ============================================================
+       SECTION LABEL (tiny all-caps above a heading)
+    ============================================================ */
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--dimmer);
+      margin-bottom: 8px;
+    }
+
+    /* ============================================================
+       BUTTONS
+       Base .btn class + modifier classes for color variants.
+    ============================================================ */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 18px 24px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+      letter-spacing: 0.01em;
+      transition: opacity 0.12s;
+      text-align: center;
+    }
+    .btn:active { opacity: 0.75; } /* visual press feedback */
+
+    .btn--orange  { background: var(--orange);  color: #111; }
+    .btn--green   { background: var(--green);   color: #111; }
+    .btn--red     { background: var(--red);     color: #fff; }
+    .btn--surface { background: var(--surface); color: var(--muted); border: 1px solid var(--border-mid); }
+    .btn--ghost   { background: transparent;    color: var(--dim);   border: 1px solid var(--border-mid); font-size: 15px; }
+    .btn--disabled{ background: var(--border);  color: #444; cursor: default; }
+
+    /* ============================================================
+       OPTION BUTTON
+       Full-width tap target for multi-choice selections.
+       Has a title + subtitle layout inside.
+    ============================================================ */
+    .opt-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: var(--surface);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      padding: 18px 20px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color 0.12s;
+    }
+    .opt-btn:active { border-color: var(--orange); }
+    .opt-btn .opt-title { color: var(--text); font-size: 16px; font-weight: 600; display: block; }
+    .opt-btn .opt-sub   { color: var(--dim);  font-size: 13px; margin-top: 4px; display: block; }
+
+    /* ============================================================
+       CHECKLIST ROWS
+       Tap to toggle. Changes style when checked.
+    ============================================================ */
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      width: 100%;
+      text-align: left;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .check-row.checked {
+      background: rgba(76,175,119,0.1);
+      border-color: var(--green);
+    }
+    .check-row .check-icon {
+      font-size: 20px;
+      color: var(--border-mid);
+      flex-shrink: 0;
+      line-height: 1.4;
+      transition: color 0.12s;
+    }
+    .check-row.checked .check-icon { color: var(--green); }
+    .check-row .check-text {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      transition: color 0.12s;
+    }
+    .check-row.checked .check-text { color: var(--green); }
+
+    /* ============================================================
+       DAY BUTTON (home screen)
+    ============================================================ */
+    .day-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      text-align: left;
+      background: var(--surface);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: opacity 0.12s, border-color 0.12s;
+    }
+    .day-btn.done { opacity: 0.4; cursor: default; border-color: #1E1E1E; background: #141414; }
+    .day-btn .day-inner { display: flex; align-items: center; gap: 16px; }
+    .day-btn .day-icon  { font-size: 34px; }
+    .day-btn .day-name  { font-family: var(--font-display); font-size: 26px; color: var(--text); }
+    .day-btn .day-sub   { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; margin-top: 3px; }
+    .day-btn .day-arrow { font-size: 16px; color: var(--border-mid); }
+
+    /* ============================================================
+       BACK LINK
+    ============================================================ */
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--dim);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0;
+      margin-bottom: 28px;
+      display: block;
+    }
+
+    /* ============================================================
+       RESISTANCE DISPLAY (big number on workout screen)
+    ============================================================ */
+    .resistance-display {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .resistance-display .res-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--dimmer);
+      margin-bottom: 4px;
+    }
+    .resistance-display .res-num {
+      font-family: var(--font-display);
+      font-size: 88px;
+      line-height: 1;
+    }
+
+    /* ============================================================
+       STEP CARD (inside workout screen)
+    ============================================================ */
+    .step-card { margin-bottom: 12px; }
+    .step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .step-name { font-family: var(--font-display); font-size: 22px; color: var(--text); }
+    .step-detail { font-size: 14px; color: var(--muted); line-height: 1.65; }
+
+    /* ============================================================
+       NOTE CARD (form tips, PF warnings etc.)
+    ============================================================ */
+    .note-card { padding: 16px 20px; margin-bottom: 12px; border-radius: var(--radius); }
+    .note-card .note-text { font-size: 13px; color: #BBB; line-height: 1.65; margin-top: 8px; }
+
+    /* ============================================================
+       SETTINGS ROW
+    ============================================================ */
+    .settings-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+    /* ============================================================
+       WEEK BADGE (home screen)
+    ============================================================ */
+    .week-badge { margin-bottom: 32px; }
+    .week-meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; color: var(--dimmer); margin-bottom: 2px; }
+    .week-num  { font-family: var(--font-display); font-size: 60px; color: var(--text); line-height: 1; }
+
+    /* ============================================================
+       UTILITY
+    ============================================================ */
+    .center { text-align: center; }
+    .mt-sm  { margin-top: 8px; }
+    .mt-md  { margin-top: 16px; }
+    .mt-lg  { margin-top: 28px; }
+    .mb-sm  { margin-bottom: 8px; }
+    .flex-between { display: flex; justify-content: space-between; align-items: flex-start; }
+    .flex-row     { display: flex; gap: 10px; }
+  </style>
+</head>
+
+<body>
+  <!--
+    #app is the single mount point for the whole application.
+    Every screen is rendered here by JavaScript.
+    Think of it like a TV — the JS changes what's "on screen"
+    by replacing the HTML inside this div.
+  -->
+  <div id="app">
+    <p style="color:#333;font-family:monospace;padding:40px 20px;">Loading...</p>
+  </div>
+
+  <script>
+    /* ============================================================
+       STORAGE HELPERS
+       localStorage is a simple key-value store built into every browser.
+       Data persists across page loads and sessions on the same device.
+       It only stores strings, so we use JSON.stringify/parse to
+       convert our JS objects to strings and back.
+    ============================================================ */
+
+    const STORAGE_KEY = 'klif-workout-v2'; // change this to reset all users' data
+
+    /** Save the entire app state to localStorage */
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    /** Load app state from localStorage. Returns null if nothing saved yet. */
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }
+
+    /* ============================================================
+       APP STATE
+       One object holds everything. Mutate it, then call saveState()
+       and re-render. This is a simplified version of how frameworks
+       like React manage state.
+    ============================================================ */
+
+    let state = {
+      screen:         'loading',   // which screen to show
+      week:           1,           // current week (1-12)
+      rowerAvailable: false,       // has the rower arrived?
+      sessions:       {},          // { "week1-monday": { completed, felt }, ... }
+      selectedDay:    null,        // which day the user just tapped
+      prevSession:    null,        // last completed session (for feedback screen)
+      workout:        null,        // built workout object for today
+      preChecks:      [],          // array of { id, text, checked }
+      postChecks:     [],          // array of { id, text, checked }
+      sessionFelt:    null,        // how today felt (for done screen messaging)
+      weekCompleted:  false,       // did this session complete the week?
+      resetConfirm:   false        // show confirmation before destructive reset
+    };
+
+    /* ============================================================
+       WORKOUT DATA
+    ============================================================ */
+
+    /**
+     * Pre-workout checklists by activity type.
+     * These get copied into state.preChecks at session start.
+     */
+    const PRE_ITEMS = {
+      row: [
+        "Fill water bottle — 32oz minimum, set it next to the rower before sitting",
+        "Change: moisture-wicking shirt, athletic shorts, socks, Skechers",
+        "Fan on, aimed at your face",
+        "Set rower resistance to the level shown on the workout screen",
+        "Sit and do 5 slow practice strokes with zero effort before the timer starts"
+      ],
+      bike: [
+        "Fill water bottle — 32oz minimum",
+        "Change: moisture-wicking shirt, athletic shorts, socks, Skechers",
+        "Tire pressure: press hard with thumb — should feel firm, not squishy",
+        "Squeeze both brakes — wheel stops before lever touches handlebar",
+        "Seat height: slight knee bend at the bottom of the pedal stroke",
+        "Take one sip before heading out"
+      ],
+      walk: [
+        "Fill water bottle — 32oz minimum",
+        "Change: moisture-wicking shirt, athletic shorts, socks, Skechers",
+        "Bring your phone",
+        "Take one sip before heading out"
+      ]
+    };
+
+    /**
+     * Post-workout checklist. Same for every session.
+     */
+    const POST_ITEMS = [
+      "Drink at least half your water bottle — do this before anything else",
+      "Calf stretch: face a wall, one foot back, heel flat, lean in — 30 sec each side",
+      "Toe stretch: sit, cross foot over knee, pull toes toward shin — 30 sec each side",
+      "Flex each foot up and down 10 times",
+      "Shower before sitting down for any reason"
+    ];
+
+    /**
+     * How-did-it-feel options shown on feedback and rating screens.
+     */
+    const FEEL_OPTIONS = [
+      { value: 'too_easy',      label: 'Too easy',       sub: 'Could have done more' },
+      { value: 'good',          label: 'About right',    sub: 'Challenging but doable' },
+      { value: 'hard',          label: 'Hard',           sub: 'Got through it, barely' },
+      { value: 'couldnt_finish',label: "Didn't finish",  sub: 'Had to stop early' }
+    ];
+
+    /* ============================================================
+       WORKOUT LOGIC
+    ============================================================ */
+
+    /**
+     * Which phase are we in based on week number?
+     * Phase drives things like whether we do intervals or steady state.
+     */
+    function getPhase(week) {
+      if (week <= 2) return 1;
+      if (week <= 4) return 2;
+      if (week <= 8) return 3;
+      return 4;
+    }
+
+    /**
+     * Which type of workout for a given day/week/rower combo?
+     * Wednesday is always bike. Mon/Fri depend on rower availability.
+     */
+    function getWorkoutType(day, week, rowerAvailable) {
+      if (day === 'wednesday') return week <= 2 ? 'walk' : 'bike';
+      return (rowerAvailable && week >= 3) ? 'row' : 'bike';
+    }
+
+    /**
+     * Build the complete workout object for today's session.
+     * lastFelt: how the previous session felt — used to adjust intensity.
+     */
+    function buildWorkout(day, week, rowerAvailable, lastFelt) {
+      const type = getWorkoutType(day, week, rowerAvailable);
+
+      // Intensity adjustment based on last session's feel rating
+      const isTooEasy = lastFelt === 'too_easy';
+      const isTough   = lastFelt === 'hard' || lastFelt === 'couldnt_finish';
+      const adj = isTooEasy ? 1 : isTough ? -1 : 0; // +1 harder, -1 easier, 0 same
+
+      // Optional note shown at top of workout screen
+      const adjustNote = isTooEasy
+        ? "Last session felt too easy. Push a little harder today."
+        : isTough
+        ? "Last session was tough. Hold the same intensity — do not advance."
+        : null;
+
+      /* ---- ROWING ---- */
+      if (type === 'row') {
+        let resistance, steps;
+
+        if (week === 3) {
+          resistance = 3;
+          steps = [
+            { label: "Warm-Up",   tag: "5 MIN",  detail: "Row slowly with zero effort. Just get the motion into your body. Nothing is timed here." },
+            { label: "Intervals", tag: "~15 MIN", detail: "Row at moderate pace for 2 minutes, then stop completely and rest for 1 minute. Repeat 5 times." },
+            { label: "Cool-Down", tag: "5 MIN",   detail: "Row slowly until your breathing feels normal." }
+          ];
+        } else if (week === 4) {
+          resistance = Math.max(3, 4 + adj);
+          steps = [
+            { label: "Warm-Up",   tag: "5 MIN",  detail: "Easy rowing. No effort." },
+            { label: "Intervals", tag: "~20 MIN", detail: "Row at moderate pace for 3 minutes, then stop completely and rest for 1 minute. Repeat 5 times." },
+            { label: "Cool-Down", tag: "5 MIN",   detail: "Easy rowing until breathing normalizes." }
+          ];
+        } else if (week <= 6) {
+          resistance = Math.min(7, Math.max(3, 4 + adj));
+          steps = [
+            { label: "Warm-Up",      tag: "5 MIN",  detail: "Easy rowing." },
+            { label: "Steady State", tag: "20 MIN", detail: "Row continuously at a pace where you could speak a short phrase but not hold a full conversation. No stopping." },
+            { label: "Cool-Down",    tag: "5 MIN",  detail: "Slow down and let your heart rate drop." }
+          ];
+        } else if (week <= 8) {
+          resistance = Math.min(8, Math.max(4, 5 + adj));
+          steps = [
+            { label: "Warm-Up",      tag: "5 MIN",  detail: "Easy rowing." },
+            { label: "Steady State", tag: "25 MIN", detail: "Continuous rowing at a challenging but sustainable effort. Short phrases okay. Full sentences take work." },
+            { label: "Cool-Down",    tag: "5 MIN",  detail: "Easy rowing." }
+          ];
+        } else if (week <= 10) {
+          resistance = Math.min(9, Math.max(5, 6 + adj));
+          steps = [
+            { label: "Warm-Up",      tag: "5 MIN",  detail: "Easy rowing." },
+            { label: "Steady State", tag: "30 MIN", detail: "Row at Level 6. If you feel strong at the halfway point, bump to Level 7. Drop back to 6 for the final stretch." },
+            { label: "Cool-Down",    tag: "5 MIN",  detail: "Easy rowing." }
+          ];
+        } else {
+          resistance = "6–7";
+          steps = [
+            { label: "Warm-Up",      tag: "5 MIN",  detail: "Easy rowing." },
+            { label: "Steady State", tag: "30 MIN", detail: "Start at Level 6. At minute 10, push to Level 7. At minute 20, drop back to Level 6 to finish strong." },
+            { label: "Cool-Down",    tag: "5 MIN",  detail: "Easy rowing." }
+          ];
+        }
+
+        return {
+          type, resistance, steps, adjustNote,
+          notes: [
+            { color: 'orange', label: 'FORM',  text: 'Drive order: legs push first → slight back lean → arms pull to lower chest. Arms come LAST.' },
+            { color: 'red',    label: 'KNEES', text: 'At the catch: shins reach vertical — not past it. Do not fully compress your knees under load.' }
+          ]
+        };
+      }
+
+      /* ---- CYCLING ---- */
+      if (type === 'bike') {
+        const phase = getPhase(week);
+        const baseDurations = { 1: week === 1 ? 20 : 25, 2: 30, 3: 35, 4: 25 };
+        const base = baseDurations[phase];
+        // Clamp adjusted duration between 15 and 45 mins
+        const duration = isTooEasy ? Math.min(base + 5, 45) : isTough ? Math.max(base - 5, 15) : base;
+        const isPhase4 = phase === 4;
+
+        const steps = [
+          {
+            label: "Ride", tag: `${duration} MIN`,
+            detail: phase === 1
+              ? "Easy pace. Flat sections of the trail only — no hills yet. You should be able to hold a full conversation. If you can't, slow down."
+              : phase === 2
+              ? "Easy pace. Flat preferred. Slight hills only if your knees feel good today."
+              : "Easy to moderate pace. Slight hills okay if knees allow."
+          }
+        ];
+
+        // Phase 4 adds a walk cool-down after the ride
+        if (isPhase4) {
+          steps.push({ label: "Walk Cool-Down", tag: "10 MIN", detail: "Dismount and walk immediately after the ride. This is your active cool-down, not optional." });
+        }
+
+        return {
+          type, steps, adjustNote,
+          notes: [
+            { color: 'blue', label: 'GEARS', text: 'Middle gear to start. Spinning with no resistance? Shift up. Grinding? Shift down. Moderate push, not strain.' }
+          ]
+        };
+      }
+
+      /* ---- WALKING ---- */
+      if (type === 'walk') {
+        const base = week === 1 ? 20 : 25;
+        const duration = isTooEasy ? Math.min(base + 5, 35) : isTough ? Math.max(base - 5, 15) : base;
+
+        return {
+          type, steps: [
+            {
+              label: "Walk", tag: `${duration} MIN`,
+              detail: "Flat trail only. Slow enough that your foot doesn't hurt. If plantar fasciitis flares at any point — stop. Do not push through foot pain. Turn around and go home. Swap to an easy bike ride if PF acts up."
+            }
+          ],
+          adjustNote,
+          notes: [
+            { color: 'red', label: 'PF RULE', text: 'Foot pain means stop immediately. Not slow down. Stop. This is the one non-negotiable rule.' }
+          ]
+        };
+      }
+    }
+
+    /**
+     * Walk backwards through session history to find the most recent
+     * completed session before today. Used to populate the feedback screen.
+     */
+    function getPrevSession(sessions, currentDay, currentWeek) {
+      const days = ['monday', 'wednesday', 'friday'];
+      const dayIdx = days.indexOf(currentDay);
+
+      for (let w = currentWeek; w >= 1; w--) {
+        // On the current week, only look at days before today; on earlier weeks, all 3 days
+        const startIdx = (w === currentWeek) ? dayIdx - 1 : 2;
+        for (let d = startIdx; d >= 0; d--) {
+          const key = `week${w}-${days[d]}`;
+          if (sessions[key]?.completed) {
+            return { day: days[d], week: w, felt: sessions[key].felt };
+          }
+        }
+      }
+      return null; // no prior session found (first session ever)
+    }
+
+    /**
+     * Returns true if all 3 sessions for a given week are logged as completed.
+     */
+    function isWeekComplete(sessions, week) {
+      return ['monday', 'wednesday', 'friday'].every(
+        d => sessions[`week${week}-${d}`]?.completed
+      );
+    }
+
+    /* ============================================================
+       VISUAL CONFIG
+       Maps workout types and note colors to display values
+       so rendering functions don't need if/else chains.
+    ============================================================ */
+
+    const TYPE_CFG = {
+      row:  { icon: '🚣', label: 'ROWING',  accent: 'orange', accentColor: '#FF6B35' },
+      bike: { icon: '🚲', label: 'CYCLING', accent: 'blue',   accentColor: '#3B9EFF' },
+      walk: { icon: '🚶', label: 'WALKING', accent: 'green',  accentColor: '#4CAF77' }
+    };
+
+    const NOTE_STYLES = {
+      orange: { bg: 'rgba(255,107,53,0.12)', border: '#FF6B35', text: '#FF6B35' },
+      red:    { bg: 'rgba(239,68,68,0.12)',  border: '#EF4444', text: '#EF4444' },
+      blue:   { bg: 'rgba(59,158,255,0.12)', border: '#3B9EFF', text: '#3B9EFF' }
+    };
+
+    const DAY_LABELS = {
+      monday: 'Monday', wednesday: 'Wednesday', friday: 'Friday'
+    };
+
+    /* ============================================================
+       HTML BUILDER HELPERS
+       These functions return HTML strings.
+       We concatenate them to build screen content,
+       then set innerHTML on #app.
+
+       Why innerHTML? For a small app like this, it's simple and fast.
+       Frameworks like React use a "virtual DOM" for the same thing but
+       with more safeguards. Here we keep it straightforward.
+    ============================================================ */
+
+    /** Renders a pill badge */
+    function pill(text, variant = '') {
+      return `<span class="pill ${variant ? 'pill--' + variant : ''}">${text}</span>`;
+    }
+
+    /** Renders a checklist row */
+    function checkRow(item) {
+      const checked = item.checked ? 'checked' : '';
+      const icon = item.checked ? '✓' : '○';
+      return `
+        <button class="check-row ${checked}" onclick="toggleCheck(${item.id})">
+          <span class="check-icon">${icon}</span>
+          <span class="check-text">${item.text}</span>
+        </button>
+      `;
+    }
+
+    /** Renders a note card with color styling */
+    function noteCard(note) {
+      const ns = NOTE_STYLES[note.color] || NOTE_STYLES.orange;
+      return `
+        <div class="note-card" style="background:${ns.bg}; border:1px solid ${ns.border};">
+          ${pill(note.label, note.color)}
+          <p class="note-text">${note.text}</p>
+        </div>
+      `;
+    }
+
+    /* ============================================================
+       SCREEN RENDERERS
+       Each function returns an HTML string for its screen.
+       render() picks the right one and sets #app.innerHTML.
+    ============================================================ */
+
+    function screenOnboarding() {
+      return `
+        <div class="center" style="padding-top:40px;">
+          <div style="font-size:64px; margin-bottom:12px;">💪</div>
+          <h1 class="font-display" style="font-size:52px; color:var(--text); margin-bottom:8px;">WORKOUT PLAN</h1>
+          <p style="color:var(--dim); font-size:14px; margin-bottom:40px;">12 weeks · 3 days a week · no decisions required</p>
+        </div>
+
+        <div class="card card--orange" style="margin-bottom:28px;">
+          <span class="pill pill--orange" style="margin-bottom:14px; display:inline-block;">PERMANENT SCHEDULE</span>
+          <div>
+            ${[['MON','Row (or Bike until rower arrives)'],['WED','Cycling — trail day, every week'],['FRI','Row (or Bike until rower arrives)']].map(([d,a]) => `
+              <div style="display:flex; gap:14px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+                <span class="font-mono" style="font-size:12px; color:var(--orange); width:36px; flex-shrink:0;">${d}</span>
+                <span style="font-size:14px; color:var(--muted);">${a}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <p style="color:var(--dim); font-size:14px; margin-bottom:16px;">Is the rowing machine set up and ready to use?</p>
+        <button class="btn btn--orange" onclick="onboardingChoose(true)">Yes — Rower is ready</button>
+        <button class="btn btn--surface" onclick="onboardingChoose(false)">Not yet — using bike until it arrives</button>
+      `;
+    }
+
+    function screenHome() {
+      const weekDone = isWeekComplete(state.sessions, state.week);
+
+      const weekCompleteCard = weekDone && state.week < 12 ? `
+        <div class="card card--green" style="margin-bottom:16px;">
+          ${pill('WEEK ' + state.week + ' COMPLETE', 'green')}
+          <p style="color:var(--muted); font-size:14px; margin:10px 0 14px;">All three sessions logged. Ready to move forward?</p>
+          <button class="btn btn--green" style="margin-bottom:0;" onclick="advanceWeek()">Advance to Week ${state.week + 1} →</button>
+        </div>
+      ` : weekDone && state.week === 12 ? `
+        <div class="card card--orange" style="margin-bottom:16px;">
+          ${pill('12 WEEKS COMPLETE', 'orange')}
+          <p style="color:var(--muted); font-size:14px; margin:10px 0 0;">Milestone reached: 30-minute continuous row. That's the whole plan.</p>
+        </div>
+      ` : '';
+
+      const rowerNote = !state.rowerAvailable ? `
+        <div class="card card--orange" style="margin-top:8px;">
+          ${pill('ROWER PENDING', 'orange')}
+          <p style="color:var(--dim); font-size:13px; margin:8px 0 0; line-height:1.5;">Mon and Fri are cycling until you mark the rower ready in Settings.</p>
+        </div>
+      ` : '';
+
+      const days = ['monday', 'wednesday', 'friday'].map(day => {
+        const done = !!state.sessions[`week${state.week}-${day}`]?.completed;
+        const type = getWorkoutType(day, state.week, state.rowerAvailable);
+        const cfg = TYPE_CFG[type];
+        return `
+          <button class="day-btn ${done ? 'done' : ''}" onclick="${done ? '' : `selectDay('${day}')`}">
+            <div class="day-inner">
+              <span class="day-icon">${cfg.icon}</span>
+              <div>
+                <div class="day-name">${DAY_LABELS[day].toUpperCase()}</div>
+                <div class="day-sub" style="color:${done ? 'var(--dimmer)' : cfg.accentColor};">${cfg.label}</div>
+              </div>
+            </div>
+            <span style="font-size:${done ? 18 : 16}px; color:${done ? '#4CAF77' : 'var(--border-mid)'};">${done ? '✓' : '→'}</span>
+          </button>
+        `;
+      }).join('');
+
+      return `
+        <div class="flex-between" style="margin-bottom:32px;">
+          <div class="week-badge">
+            <p class="week-meta">CURRENTLY ON</p>
+            <div class="week-num">${state.week}</div>
+            <p class="week-meta">OF 12</p>
+          </div>
+          <button class="btn btn--ghost" style="width:auto; padding:8px 16px; margin-bottom:0; font-size:13px;" onclick="goTo('settings')">Settings</button>
+        </div>
+
+        ${weekCompleteCard}
+
+        <p class="section-label">WHICH DAY IS TODAY?</p>
+        ${days}
+        ${rowerNote}
+      `;
+    }
+
+    function screenFeedback() {
+      const prev = state.prevSession;
+      const prevLabel = prev ? DAY_LABELS[prev.day].toUpperCase() : 'LAST SESSION';
+      const opts = FEEL_OPTIONS.map(opt => `
+        <button class="opt-btn" onclick="submitFeedback('${opt.value}')">
+          <span class="opt-title">${opt.label}</span>
+          <span class="opt-sub">${opt.sub}</span>
+        </button>
+      `).join('');
+      return `
+        <button class="back-btn" onclick="goTo('home')">← Back</button>
+        <p class="section-label">BEFORE WE START</p>
+        <h2 class="font-display" style="font-size:34px; color:var(--text); margin-bottom:6px;">HOW DID LAST ${prevLabel} FEEL?</h2>
+        <p style="color:var(--dim); font-size:14px; margin-bottom:28px;">Adjusts today's intensity</p>
+        ${opts}
+        <button class="btn btn--ghost" onclick="submitFeedback('good')">Skip / not sure</button>
+      `;
+    }
+
+    function screenPre() {
+      const w = state.workout;
+      const cfg = TYPE_CFG[w.type];
+      const allDone = state.preChecks.every(c => c.checked);
+      const remaining = state.preChecks.filter(c => !c.checked).length;
+
+      const adjustBanner = w.adjustNote ? `
+        <div class="card card--orange" style="margin-bottom:16px;">
+          <p style="color:var(--orange); font-size:14px; margin:0;">⚠ ${w.adjustNote}</p>
+        </div>
+      ` : '';
+
+      return `
+        <button class="back-btn" onclick="goTo('home')">← Back</button>
+        <div class="center" style="margin-bottom:24px;">
+          <div style="font-size:52px; margin-bottom:10px;">${cfg.icon}</div>
+          ${pill(cfg.label + ' DAY', cfg.accent)}
+        </div>
+        ${adjustBanner}
+        <p class="section-label" style="margin-bottom:14px;">CHECK EVERYTHING OFF FIRST</p>
+        ${state.preChecks.map(item => checkRow(item)).join('')}
+        <div style="margin-top:16px;">
+          <button class="btn ${allDone ? 'btn--orange' : 'btn--disabled'}"
+            onclick="${allDone ? "goTo('workout')" : ''}">
+            ${allDone ? "I'm Ready →" : `${remaining} item${remaining !== 1 ? 's' : ''} remaining`}
+          </button>
+        </div>
+      `;
+    }
+
+    function screenWorkout() {
+      const w = state.workout;
+      const cfg = TYPE_CFG[w.type];
+
+      const resistanceBlock = (w.resistance !== undefined) ? `
+        <div class="card card--${cfg.accent} resistance-display">
+          <p class="res-label">SET RESISTANCE TO</p>
+          <div class="res-num" style="color:${cfg.accentColor};">${w.resistance}</div>
+        </div>
+      ` : '';
+
+      const steps = w.steps.map(step => `
+        <div class="card step-card">
+          <div class="step-header">
+            <span class="step-name">${step.label.toUpperCase()}</span>
+            ${pill(step.tag)}
+          </div>
+          <p class="step-detail">${step.detail}</p>
+        </div>
+      `).join('');
+
+      const notes = (w.notes || []).map(note => noteCard(note)).join('');
+
+      return `
+        <div class="center" style="margin-bottom:20px;">
+          <div style="font-size:52px; margin-bottom:10px;">${cfg.icon}</div>
+          ${pill(cfg.label + ' DAY', cfg.accent)}
+        </div>
+        ${resistanceBlock}
+        ${steps}
+        ${notes}
+        <div style="margin-top:16px;">
+          <button class="btn btn--green" onclick="goTo('post')">Workout Complete ✓</button>
+        </div>
+      `;
+    }
+
+    function screenPost() {
+      const allDone = state.postChecks.every(c => c.checked);
+      return `
+        ${pill('WORKOUT DONE', 'green')}
+        <h2 class="font-display" style="font-size:44px; color:var(--text); margin:12px 0 4px;">FINISH STRONG</h2>
+        <p style="color:var(--dim); font-size:14px; margin-bottom:24px;">Do these now, in order, before sitting down</p>
+        ${state.postChecks.map(item => checkRow(item)).join('')}
+        <div style="margin-top:16px;">
+          <button class="btn ${allDone ? 'btn--green' : 'btn--surface'}" onclick="goTo('rate')">
+            ${allDone ? 'All done →' : 'Continue anyway →'}
+          </button>
+        </div>
+      `;
+    }
+
+    function screenRate() {
+      const opts = FEEL_OPTIONS.map(opt => `
+        <button class="opt-btn" onclick="logSession('${opt.value}')">
+          <span class="opt-title">${opt.label}</span>
+          <span class="opt-sub">${opt.sub}</span>
+        </button>
+      `).join('');
+      return `
+        <p class="section-label">LAST QUESTION</p>
+        <h2 class="font-display" style="font-size:42px; color:var(--text); margin-bottom:6px;">HOW DID TODAY FEEL?</h2>
+        <p style="color:var(--dim); font-size:14px; margin-bottom:28px;">Calibrates your next session</p>
+        ${opts}
+      `;
+    }
+
+    function screenDone() {
+      // Rotate through messages using time-based index (low-tech but fun)
+      const msgs = [
+        "That's one more session in the bank.",
+        "Consistency beats intensity. You showed up.",
+        "Habit built. See you next session.",
+        "Done. That's what matters."
+      ];
+      const msg = msgs[Math.floor(Date.now() / 10000) % msgs.length];
+
+      const weekCard = state.weekCompleted ? `
+        <div class="card card--green" style="text-align:left; margin-bottom:12px;">
+          ${pill('WEEK ' + state.week + ' COMPLETE', 'green')}
+          <p style="color:var(--muted); font-size:14px; margin:10px 0 0;">
+            ${state.week < 12
+              ? 'All three sessions done. Hit Advance from the home screen when ready.'
+              : 'All 12 weeks complete. Milestone reached.'}
+          </p>
+        </div>
+      ` : '';
+
+      const feltCard = state.sessionFelt === 'couldnt_finish' ? `
+        <div class="card card--orange" style="text-align:left; margin-bottom:12px;">
+          <p style="color:var(--orange); font-size:14px; margin:0;">Next session holds the same intensity. You're not behind. You're building base.</p>
+        </div>
+      ` : state.sessionFelt === 'too_easy' ? `
+        <div class="card card--blue" style="text-align:left; margin-bottom:12px;">
+          <p style="color:var(--blue); font-size:14px; margin:0;">Next session pushes a little harder.</p>
+        </div>
+      ` : '';
+
+      return `
+        <div class="center">
+          <div style="font-size:72px; margin-bottom:16px;">✅</div>
+          <h2 class="font-display" style="font-size:52px; color:var(--text); margin-bottom:8px;">SESSION LOGGED</h2>
+          <p style="color:var(--dim); font-size:15px; margin-bottom:32px;">${msg}</p>
+        </div>
+        ${weekCard}
+        ${feltCard}
+        <button class="btn btn--orange" onclick="goTo('home')">Back to Home</button>
+      `;
+    }
+
+    function screenSettings() {
+      const resetBlock = state.resetConfirm ? `
+        <div class="card card--red">
+          <p style="color:var(--red); font-size:14px; margin-bottom:16px; line-height:1.5;">This deletes all session history and restarts from Week 1. Are you sure?</p>
+          <button class="btn btn--red" onclick="doReset()">Yes, reset everything</button>
+          <button class="btn btn--ghost" onclick="setResetConfirm(false)">Cancel</button>
+        </div>
+      ` : `
+        <button class="btn btn--ghost" style="color:#3A3A3A; border-color:#222;" onclick="setResetConfirm(true)">Reset all data</button>
+      `;
+
+      return `
+        <button class="back-btn" onclick="goTo('home')">← Back</button>
+        <h2 class="font-display" style="font-size:44px; color:var(--text); margin-bottom:28px;">SETTINGS</h2>
+
+        <div class="card" style="margin-bottom:12px;">
+          <p class="section-label" style="margin-bottom:14px;">ROWING MACHINE</p>
+          <button class="btn btn--ghost" style="margin-bottom:8px; ${state.rowerAvailable ? 'border-color:var(--green); color:var(--green);' : ''}" onclick="setRower(true)">
+            ${state.rowerAvailable ? '✓ ' : ''}Rower is set up and ready
+          </button>
+          <button class="btn btn--ghost" style="margin-bottom:0; ${!state.rowerAvailable ? 'border-color:var(--orange); color:var(--orange);' : ''}" onclick="setRower(false)">
+            ${!state.rowerAvailable ? '✓ ' : ''}Rower not yet available
+          </button>
+        </div>
+
+        <div class="card" style="margin-bottom:12px;">
+          <p class="section-label">CURRENT WEEK</p>
+          <div class="font-display" style="font-size:56px; color:var(--text); margin:0 0 16px;">${state.week} OF 12</div>
+          <div class="flex-row">
+            ${state.week > 1  ? `<button class="btn btn--ghost" style="flex:1; margin-bottom:0;" onclick="changeWeek(-1)">← Back</button>` : ''}
+            ${state.week < 12 ? `<button class="btn btn--green" style="flex:1; margin-bottom:0;" onclick="changeWeek(1)">Advance →</button>` : ''}
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px;">
+          <p class="section-label" style="margin-bottom:10px;">SKIP PROTOCOL</p>
+          <p style="color:var(--dim); font-size:13px; line-height:1.7; margin:0;">
+            Postpone by one day, once per week only. Monday becomes Tuesday. You cannot cancel — only postpone or do it.
+            If you miss a full week for illness, return at the previous week's workload, not the current one.
+          </p>
+        </div>
+
+        <div class="card" style="margin-bottom:24px;">
+          <p class="section-label" style="margin-bottom:10px;">HEAT ADVISORY — JUNE ONWARD</p>
+          <p style="color:var(--dim); font-size:13px; line-height:1.7; margin:0;">
+            Check garage temp before starting. If it's hot: open all doors, run the fan 10 min first, add 8oz water.
+            Dizzy = stop, sit down, drink. Do not finish the session.
+          </p>
+        </div>
+
+        ${resetBlock}
+      `;
+    }
+
+    /* ============================================================
+       RENDER
+       The single function that updates the UI.
+       Call this after every state change.
+    ============================================================ */
+    function render() {
+      const app = document.getElementById('app');
+      const screens = {
+        loading:    () => '<p style="color:#333;font-family:monospace;padding:40px 20px;">Loading...</p>',
+        onboarding: screenOnboarding,
+        home:       screenHome,
+        feedback:   screenFeedback,
+        pre:        screenPre,
+        workout:    screenWorkout,
+        post:       screenPost,
+        rate:       screenRate,
+        done:       screenDone,
+        settings:   screenSettings
+      };
+      const renderer = screens[state.screen];
+      app.innerHTML = renderer ? renderer() : '<p style="color:red;">Unknown screen: ' + state.screen + '</p>';
+      // Scroll to top on screen change so users don't start mid-page
+      window.scrollTo(0, 0);
+    }
+
+    /* ============================================================
+       ACTION HANDLERS
+       These are called by onclick attributes in the HTML strings.
+       Each one mutates state and calls render().
+       saveState() is called whenever something worth persisting changes.
+    ============================================================ */
+
+    /** Navigate to a named screen */
+    function goTo(screen) {
+      state.screen = screen;
+      // Clear transient reset confirm flag on navigation
+      if (screen !== 'settings') state.resetConfirm = false;
+      render();
+    }
+
+    /** Called once on first launch to set rower status and save initial state */
+    function onboardingChoose(rowerAvailable) {
+      state.week = 1;
+      state.rowerAvailable = rowerAvailable;
+      state.sessions = {};
+      state.screen = 'home';
+      saveState(state);
+      render();
+    }
+
+    /** Called when a day button is tapped on the home screen */
+    function selectDay(day) {
+      state.selectedDay = day;
+      const prev = getPrevSession(state.sessions, day, state.week);
+      state.prevSession = prev;
+      state.sessionFelt = null;
+
+      // If there's a prior session, show the feedback screen first
+      if (prev) {
+        state.screen = 'feedback';
+      } else {
+        // First session ever — skip feedback, go straight to pre-workout
+        _startSession(null);
+        return;
+      }
+      render();
+    }
+
+    /** Called from the feedback screen when user selects a feel rating */
+    function submitFeedback(felt) {
+      _startSession(felt);
+    }
+
+    /**
+     * Internal: build the workout object and transition to pre-workout screen.
+     * felt: the feel rating from the previous session (or null)
+     */
+    function _startSession(felt) {
+      state.workout = buildWorkout(state.selectedDay, state.week, state.rowerAvailable, felt);
+      const type = getWorkoutType(state.selectedDay, state.week, state.rowerAvailable);
+
+      // Build checklists with id numbers for the toggle handler
+      state.preChecks  = PRE_ITEMS[type].map((text, i) => ({ id: i, text, checked: false }));
+      state.postChecks = POST_ITEMS.map((text, i) => ({ id: i, text, checked: false }));
+      state.screen = 'pre';
+      render();
+    }
+
+    /**
+     * Toggle a checklist item on the pre or post screen.
+     * Since both screens use id-based lookup, this works for both.
+     * Called from onclick="toggleCheck(id)"
+     */
+    function toggleCheck(id) {
+      // Determine which checklist is active based on current screen
+      const list = state.screen === 'pre' ? 'preChecks' : 'postChecks';
+      state[list] = state[list].map(c => c.id === id ? { ...c, checked: !c.checked } : c);
+      render();
+    }
+
+    /**
+     * Log the session as complete with a feel rating, then transition to done screen.
+     * This is the only place we write to state.sessions.
+     */
+    function logSession(felt) {
+      const key = `week${state.week}-${state.selectedDay}`;
+      state.sessions[key] = { completed: true, felt };
+      state.sessionFelt = felt;
+      state.weekCompleted = isWeekComplete(state.sessions, state.week);
+      state.screen = 'done';
+      saveState(state); // persist after logging
+      render();
+    }
+
+    /** Advance or retreat one week (from settings) */
+    function changeWeek(delta) {
+      state.week = Math.max(1, Math.min(12, state.week + delta));
+      saveState(state);
+      render();
+    }
+
+    /** Shortcut for advancing exactly one week (from the week-complete card) */
+    function advanceWeek() {
+      changeWeek(1);
+      goTo('home');
+    }
+
+    /** Toggle rower availability (from settings) */
+    function setRower(available) {
+      state.rowerAvailable = available;
+      saveState(state);
+      render();
+    }
+
+    /** Show/hide the reset confirmation (from settings) */
+    function setResetConfirm(val) {
+      state.resetConfirm = val;
+      render();
+    }
+
+    /** Wipe everything and return to onboarding */
+    function doReset() {
+      localStorage.removeItem(STORAGE_KEY);
+      state = {
+        screen: 'onboarding', week: 1, rowerAvailable: false, sessions: {},
+        selectedDay: null, prevSession: null, workout: null,
+        preChecks: [], postChecks: [], sessionFelt: null,
+        weekCompleted: false, resetConfirm: false
+      };
+      render();
+    }
+
+    /* ============================================================
+       INIT
+       Runs when the page loads.
+       Loads saved state from localStorage and shows the right screen.
+    ============================================================ */
+    (function init() {
+      const saved = loadState();
+      if (saved) {
+        // Restore all persisted fields; overlay onto default state
+        // to handle any new fields added in future versions
+        Object.assign(state, saved);
+        state.screen = 'home'; // always start on home, not mid-session
+        state.resetConfirm = false;
+      } else {
+        state.screen = 'onboarding';
+      }
+      render();
+    })();
+
+  </script>
+</body>
+</html>
