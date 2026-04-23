@@ -391,7 +391,8 @@
       postChecks:     [],          // array of { id, text, checked }
       sessionFelt:    null,        // how today felt (for done screen messaging)
       weekCompleted:  false,       // did this session complete the week?
-      resetConfirm:   false        // show confirmation before destructive reset
+      resetConfirm:   false,       // show confirmation before destructive reset
+      weatherBackup:  false        // true when Wednesday is using the indoor row backup
     };
 
     /* ============================================================
@@ -630,6 +631,43 @@
       );
     }
 
+    /**
+     * Build a reduced rowing session for Wednesday weather backup days.
+     * Always easier than Mon/Fri: lower resistance, shorter duration, interval-friendly.
+     * Wednesday's job is active recovery, not a second hard session.
+     */
+    function buildWednesdayBackup(week) {
+      // Resistance is always 1-2 levels below what Monday would use, capped at 5
+      const resistance = week <= 4 ? 3 : week <= 8 ? 4 : 5;
+
+      // Duration caps at 20 min of actual rowing regardless of phase
+      // Intervals are used even in later phases where Mon/Fri do steady state —
+      // intervals reduce sustained effort, which is the point on a recovery day
+      const steps = week <= 4
+        ? [
+            { label: "Warm-Up",   tag: "5 MIN",  detail: "Easy rowing. No effort. Just movement." },
+            { label: "Intervals", tag: "~15 MIN", detail: "Row at easy pace for 2 minutes, rest completely for 1 minute. Repeat 5 times. This is easier than your regular sessions — that's intentional." },
+            { label: "Cool-Down", tag: "5 MIN",   detail: "Row slowly until breathing is back to normal." }
+          ]
+        : [
+            { label: "Warm-Up",   tag: "5 MIN",  detail: "Easy rowing. No effort." },
+            { label: "Intervals", tag: "~20 MIN", detail: "Row at easy-to-moderate pace for 3 minutes, rest completely for 1 minute. Repeat 5 times. Lower resistance than your regular sessions — this is a maintenance day, not a training day." },
+            { label: "Cool-Down", tag: "5 MIN",   detail: "Easy rowing." }
+          ];
+
+      return {
+        type: 'row',
+        resistance,
+        steps,
+        adjustNote: "Weather backup day. This session is easier than normal — that's by design. The goal is to move, not to push.",
+        isWeatherBackup: true, // flag used by screenWorkout to show the backup badge
+        notes: [
+          { color: 'orange', label: 'FORM',  text: 'Drive order: legs push first → slight back lean → arms pull to lower chest. Arms come LAST.' },
+          { color: 'red',    label: 'KNEES', text: 'At the catch: shins reach vertical — not past it. Do not fully compress your knees under load.' }
+        ]
+      };
+    }
+
     /* ============================================================
        VISUAL CONFIG
        Maps workout types and note colors to display values
@@ -700,7 +738,7 @@
     function screenOnboarding() {
       return `
         <div class="center" style="padding-top:40px;">
-          <div style="font-size:64px; margin-bottom:12px;">💪</div>
+          <div style="font-size:64px; margin-bottom:12px;">🚣🚴‍♀️🚶‍♂️‍➡️</div>
           <h1 class="font-display" style="font-size:52px; color:var(--text); margin-bottom:8px;">WORKOUT PLAN</h1>
           <p style="color:var(--dim); font-size:14px; margin-bottom:40px;">12 weeks · 3 days a week · no decisions required</p>
         </div>
@@ -801,6 +839,31 @@
       `;
     }
 
+    /**
+     * Weather screen — shown only on Wednesday when the rower is available and it's week 3+.
+     * Gives a simple choice between going outside or using the indoor rowing backup.
+     * No feel-rating question before this screen — weather choice happens first.
+     */
+    function screenWeather() {
+      return `
+        <button class="back-btn" onclick="goTo('home')">← Back</button>
+        <div style="font-size:52px; margin-bottom:16px;">🌧</div>
+        <p class="section-label">WEDNESDAY CHECK-IN</p>
+        <h2 class="font-display" style="font-size:38px; color:var(--text); margin-bottom:6px;">HOW'S THE WEATHER?</h2>
+        <p style="color:var(--dim); font-size:14px; margin-bottom:28px;">This picks your session for today</p>
+
+        <button class="opt-btn" onclick="weatherChoice(false)">
+          <span class="opt-title">🚲 Outside is fine</span>
+          <span class="opt-sub">Trail ride as planned</span>
+        </button>
+
+        <button class="opt-btn" onclick="weatherChoice(true)">
+          <span class="opt-title">🚣 Bad weather — going inside</span>
+          <span class="opt-sub">Easy row backup session instead</span>
+        </button>
+      `;
+    }
+
     function screenPre() {
       const w = state.workout;
       const cfg = TYPE_CFG[w.type];
@@ -854,11 +917,23 @@
 
       const notes = (w.notes || []).map(note => noteCard(note)).join('');
 
+      // Weather backup sessions get a special badge so it's clear this is a modified day
+      const backupBadge = w.isWeatherBackup ? `
+        <div class="card card--blue" style="margin-bottom:16px;">
+          ${pill('WEATHER BACKUP', 'blue')}
+          <p style="color:var(--dim); font-size:13px; margin:8px 0 0; line-height:1.5;">
+            This is an easier version of the row session. Lower resistance, shorter duration.
+            Wednesday's job is active recovery, not a hard session.
+          </p>
+        </div>
+      ` : '';
+
       return `
         <div class="center" style="margin-bottom:20px;">
           <div style="font-size:52px; margin-bottom:10px;">${cfg.icon}</div>
           ${pill(cfg.label + ' DAY', cfg.accent)}
         </div>
+        ${backupBadge}
         ${resistanceBlock}
         ${steps}
         ${notes}
@@ -1006,6 +1081,7 @@
         loading:    () => '<p style="color:#333;font-family:monospace;padding:40px 20px;">Loading...</p>',
         onboarding: screenOnboarding,
         home:       screenHome,
+        weather:    screenWeather,
         feedback:   screenFeedback,
         pre:        screenPre,
         workout:    screenWorkout,
@@ -1048,17 +1124,55 @@
     /** Called when a day button is tapped on the home screen */
     function selectDay(day) {
       state.selectedDay = day;
+      state.weatherBackup = false; // reset from any prior Wednesday choice
       const prev = getPrevSession(state.sessions, day, state.week);
       state.prevSession = prev;
       state.sessionFelt = null;
 
-      // If there's a prior session, show the feedback screen first
+      // Wednesday gets a weather check first when the rower is available and it's week 3+.
+      // In weeks 1-2 Wednesday is a walk (outdoor only), so no weather screen needed then.
+      // Before week 3 the rower isn't in the plan yet either way.
+      if (day === 'wednesday' && state.rowerAvailable && state.week >= 3) {
+        state.screen = 'weather';
+        render();
+        return;
+      }
+
+      // All other days: show feel-rating feedback if there's a prior session,
+      // otherwise go straight to pre-workout
       if (prev) {
         state.screen = 'feedback';
       } else {
-        // First session ever — skip feedback, go straight to pre-workout
         _startSession(null);
         return;
+      }
+      render();
+    }
+
+    /**
+     * Called from the weather screen.
+     * useBackup: true = bad weather, use indoor row; false = outside is fine, use bike as planned.
+     * After the weather choice, we still ask the feel-rating question if there's a prior session.
+     */
+    function weatherChoice(useBackup) {
+      state.weatherBackup = useBackup;
+
+      if (useBackup) {
+        // Skip the feel-rating screen for backup days — resistance is always reduced regardless,
+        // so the feel adjustment doesn't apply here. Go straight to pre-workout.
+        state.workout = buildWednesdayBackup(state.week);
+        state.preChecks  = PRE_ITEMS['row'].map((text, i) => ({ id: i, text, checked: false }));
+        state.postChecks = POST_ITEMS.map((text, i) => ({ id: i, text, checked: false }));
+        state.screen = 'pre';
+      } else {
+        // Normal bike day — proceed to feel-rating if there's a prior session
+        const prev = state.prevSession;
+        if (prev) {
+          state.screen = 'feedback';
+        } else {
+          _startSession(null);
+          return;
+        }
       }
       render();
     }
@@ -1142,7 +1256,7 @@
         screen: 'onboarding', week: 1, rowerAvailable: false, sessions: {},
         selectedDay: null, prevSession: null, workout: null,
         preChecks: [], postChecks: [], sessionFelt: null,
-        weekCompleted: false, resetConfirm: false
+        weekCompleted: false, resetConfirm: false, weatherBackup: false
       };
       render();
     }
