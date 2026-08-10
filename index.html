@@ -24,13 +24,13 @@
   <!--
     Google Fonts loaded from CDN (Content Delivery Network).
     CDN = someone else's server hosts the file; your browser fetches it.
-    Bebas Neue  → display/heading font, all-caps condensed
-    Space Mono  → monospace font, used for labels and tags
-    DM Sans     → clean sans-serif for body text
+    Bricolage Grotesque  → display/heading font
+    Space Mono           → monospace font, used for labels and tags
+    Atkinson Hyperlegible → clean sans-serif for body text
   -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Space+Mono:wght@400;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
 
   <style>
     /* ============================================================
@@ -39,27 +39,34 @@
        var(--name) references them anywhere in the CSS.
     ============================================================ */
     :root {
-      --bg:         #0F0F0F;   /* page background */
-      --surface:    #181818;   /* card background */
-      --border:     #242424;   /* default border */
-      --border-mid: #2A2A2A;   /* slightly lighter border */
-      --text:       #E8E8E8;   /* primary text */
-      --muted:      #888888;   /* secondary text */
-      --dim:        #555555;   /* placeholder/label text */
-      --dimmer:     #444444;   /* even quieter text */
+      --bg:         #123524;   /* page background */
+      --surface:    #1A4A30;   /* card background */
+      --border:     #244631;   /* default border */
+      --border-mid: #2F5B3E;   /* slightly lighter border */
+      --text:       #F0EBE0;   /* primary text */
+      --muted:      #B8AFA0;   /* secondary text */
+      --dim:        #8C8577;   /* placeholder/label text */
+      --dimmer:     #6B6558;   /* even quieter text */
 
-      --orange:     #FF6B35;   /* rowing accent */
-      --blue:       #3B9EFF;   /* cycling accent */
-      --green:      #4CAF77;   /* walking / success accent */
-      --red:        #EF4444;   /* warning / danger */
+      --orange:     #FF8C42;   /* rowing accent */
+      --blue:       #4FB8C4;   /* cycling accent */
+      --green:      #7FD99A;   /* walking / success accent */
+      --red:        #E8604A;   /* warning / danger */
+
+      /* Same four colors as RGB triplets, so JS/CSS can build translucent
+         rgba() backgrounds without duplicating the hex value separately. */
+      --orange-rgb: 255,140,66;
+      --blue-rgb:   79,184,196;
+      --green-rgb:  127,217,154;
+      --red-rgb:    232,96,74;
 
       --radius:     18px;      /* default card border radius */
       --radius-sm:  14px;      /* button / smaller element radius */
       --radius-pill:20px;      /* pill-shaped label radius */
 
-      --font-display: 'Bebas Neue', Impact, sans-serif;
+      --font-display: 'Bricolage Grotesque', Impact, sans-serif;
       --font-mono:    'Space Mono', 'Courier New', monospace;
-      --font-body:    'DM Sans', system-ui, sans-serif;
+      --font-body:    'Atkinson Hyperlegible', system-ui, sans-serif;
     }
 
     /* ============================================================
@@ -122,7 +129,7 @@
     .card--green  { border-color: var(--green); }
     .card--red    { border-color: var(--red); }
     .card--blue   { border-color: var(--blue); }
-    .card--dim    { border-color: #1E1E1E; background: #141414; }
+    .card--dim    { border-color: #1E3A2A; background: #142A1E; }
 
     /* ============================================================
        PILL LABELS
@@ -139,10 +146,10 @@
       background: var(--border);
       color: var(--dim);
     }
-    .pill--orange { background: rgba(255,107,53,0.15); color: var(--orange); }
-    .pill--green  { background: rgba(76,175,119,0.15); color: var(--green); }
-    .pill--red    { background: rgba(239,68,68,0.15);  color: var(--red); }
-    .pill--blue   { background: rgba(59,158,255,0.15); color: var(--blue); }
+    .pill--orange { background: rgba(var(--orange-rgb),0.15); color: var(--orange); }
+    .pill--green  { background: rgba(var(--green-rgb),0.15); color: var(--green); }
+    .pill--red    { background: rgba(var(--red-rgb),0.15);  color: var(--red); }
+    .pill--blue   { background: rgba(var(--blue-rgb),0.15); color: var(--blue); }
 
     /* ============================================================
        SECTION LABEL (tiny all-caps above a heading)
@@ -181,7 +188,7 @@
     .btn--red     { background: var(--red);     color: #fff; }
     .btn--surface { background: var(--surface); color: var(--muted); border: 1px solid var(--border-mid); }
     .btn--ghost   { background: transparent;    color: var(--dim);   border: 1px solid var(--border-mid); font-size: 15px; }
-    .btn--disabled{ background: var(--border);  color: #444; cursor: default; }
+    .btn--disabled{ background: var(--border);  color: var(--dimmer); cursor: default; }
 
     /* ============================================================
        OPTION BUTTON
@@ -223,7 +230,7 @@
       transition: background 0.12s, border-color 0.12s;
     }
     .check-row.checked {
-      background: rgba(76,175,119,0.1);
+      background: rgba(var(--green-rgb),0.1);
       border-color: var(--green);
     }
     .check-row .check-icon {
@@ -259,7 +266,7 @@
       cursor: pointer;
       transition: opacity 0.12s, border-color 0.12s;
     }
-    .day-btn.done { opacity: 0.4; cursor: default; border-color: #1E1E1E; background: #141414; }
+    .day-btn.done { opacity: 0.4; cursor: default; border-color: #1E3A2A; background: #142A1E; }
     .day-btn .day-inner { display: flex; align-items: center; gap: 16px; }
     .day-btn .day-icon  { font-size: 34px; }
     .day-btn .day-name  { font-family: var(--font-display); font-size: 26px; color: var(--text); }
@@ -312,7 +319,7 @@
        NOTE CARD (form tips, PF warnings etc.)
     ============================================================ */
     .note-card { padding: 16px 20px; margin-bottom: 12px; border-radius: var(--radius); }
-    .note-card .note-text { font-size: 13px; color: #BBB; line-height: 1.65; margin-top: 8px; }
+    .note-card .note-text { font-size: 13px; color: var(--muted); line-height: 1.65; margin-top: 8px; }
 
     /* ============================================================
        SETTINGS ROW
@@ -347,7 +354,7 @@
     by replacing the HTML inside this div.
   -->
   <div id="app">
-    <p style="color:#333;font-family:monospace;padding:40px 20px;">Loading...</p>
+    <p style="color:var(--border);font-family:monospace;padding:40px 20px;">Loading...</p>
   </div>
 
   <script>
@@ -382,7 +389,6 @@
     let state = {
       screen:         'loading',   // which screen to show
       week:           1,           // current week (1-12)
-      rowerAvailable: false,       // has the rower arrived?
       sessions:       {},          // { "week1-monday": { completed, felt }, ... }
       selectedDay:    null,        // which day the user just tapped
       prevSession:    null,        // last completed session (for feedback screen)
@@ -464,20 +470,21 @@
     }
 
     /**
-     * Which type of workout for a given day/week/rower combo?
-     * Wednesday is always bike. Mon/Fri depend on rower availability.
+     * Which type of workout for a given day/week?
+     * Wednesday is bike from week 3 on (walk weeks 1-2). Mon/Fri are bike
+     * for the first 2 weeks, then row from week 3 on.
      */
-    function getWorkoutType(day, week, rowerAvailable) {
+    function getWorkoutType(day, week) {
       if (day === 'wednesday') return week <= 2 ? 'walk' : 'bike';
-      return (rowerAvailable && week >= 3) ? 'row' : 'bike';
+      return week >= 3 ? 'row' : 'bike';
     }
 
     /**
      * Build the complete workout object for today's session.
      * lastFelt: how the previous session felt — used to adjust intensity.
      */
-    function buildWorkout(day, week, rowerAvailable, lastFelt) {
-      const type = getWorkoutType(day, week, rowerAvailable);
+    function buildWorkout(day, week, lastFelt) {
+      const type = getWorkoutType(day, week);
 
       // Intensity adjustment based on last session's feel rating
       const isTooEasy = lastFelt === 'too_easy';
@@ -675,15 +682,15 @@
     ============================================================ */
 
     const TYPE_CFG = {
-      row:  { icon: '🚣', label: 'ROWING',  accent: 'orange', accentColor: '#FF6B35' },
-      bike: { icon: '🚲', label: 'CYCLING', accent: 'blue',   accentColor: '#3B9EFF' },
-      walk: { icon: '🚶', label: 'WALKING', accent: 'green',  accentColor: '#4CAF77' }
+      row:  { icon: '🚣', label: 'ROWING',  accent: 'orange', accentColor: 'var(--orange)' },
+      bike: { icon: '🚲', label: 'CYCLING', accent: 'blue',   accentColor: 'var(--blue)' },
+      walk: { icon: '🚶', label: 'WALKING', accent: 'green',  accentColor: 'var(--green)' }
     };
 
     const NOTE_STYLES = {
-      orange: { bg: 'rgba(255,107,53,0.12)', border: '#FF6B35', text: '#FF6B35' },
-      red:    { bg: 'rgba(239,68,68,0.12)',  border: '#EF4444', text: '#EF4444' },
-      blue:   { bg: 'rgba(59,158,255,0.12)', border: '#3B9EFF', text: '#3B9EFF' }
+      orange: { bg: 'rgba(var(--orange-rgb),0.12)', border: 'var(--orange)', text: 'var(--orange)' },
+      red:    { bg: 'rgba(var(--red-rgb),0.12)',    border: 'var(--red)',    text: 'var(--red)' },
+      blue:   { bg: 'rgba(var(--blue-rgb),0.12)',   border: 'var(--blue)',   text: 'var(--blue)' }
     };
 
     const DAY_LABELS = {
@@ -746,7 +753,7 @@
         <div class="card card--orange" style="margin-bottom:28px;">
           <span class="pill pill--orange" style="margin-bottom:14px; display:inline-block;">PERMANENT SCHEDULE</span>
           <div>
-            ${[['MON','Row (or Bike until rower arrives)'],['WED','Cycling — trail day, every week'],['FRI','Row (or Bike until rower arrives)']].map(([d,a]) => `
+            ${[['MON','Bike weeks 1-2, then Row'],['WED','Cycling — trail day, every week'],['FRI','Bike weeks 1-2, then Row']].map(([d,a]) => `
               <div style="display:flex; gap:14px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
                 <span class="font-mono" style="font-size:12px; color:var(--orange); width:36px; flex-shrink:0;">${d}</span>
                 <span style="font-size:14px; color:var(--muted);">${a}</span>
@@ -755,9 +762,7 @@
           </div>
         </div>
 
-        <p style="color:var(--dim); font-size:14px; margin-bottom:16px;">Is the rowing machine set up and ready to use?</p>
-        <button class="btn btn--orange" onclick="onboardingChoose(true)">Yes — Rower is ready</button>
-        <button class="btn btn--surface" onclick="onboardingChoose(false)">Not yet — using bike until it arrives</button>
+        <button class="btn btn--orange" onclick="onboardingChoose()">Let's Go →</button>
       `;
     }
 
@@ -777,16 +782,9 @@
         </div>
       ` : '';
 
-      const rowerNote = !state.rowerAvailable ? `
-        <div class="card card--orange" style="margin-top:8px;">
-          ${pill('ROWER PENDING', 'orange')}
-          <p style="color:var(--dim); font-size:13px; margin:8px 0 0; line-height:1.5;">Mon and Fri are cycling until you mark the rower ready in Settings.</p>
-        </div>
-      ` : '';
-
       const days = ['monday', 'wednesday', 'friday'].map(day => {
         const done = !!state.sessions[`week${state.week}-${day}`]?.completed;
-        const type = getWorkoutType(day, state.week, state.rowerAvailable);
+        const type = getWorkoutType(day, state.week);
         const cfg = TYPE_CFG[type];
         return `
           <button class="day-btn ${done ? 'done' : ''}" onclick="${done ? '' : `selectDay('${day}')`}">
@@ -797,7 +795,7 @@
                 <div class="day-sub" style="color:${done ? 'var(--dimmer)' : cfg.accentColor};">${cfg.label}</div>
               </div>
             </div>
-            <span style="font-size:${done ? 18 : 16}px; color:${done ? '#4CAF77' : 'var(--border-mid)'};">${done ? '✓' : '→'}</span>
+            <span style="font-size:${done ? 18 : 16}px; color:${done ? 'var(--green)' : 'var(--border-mid)'};">${done ? '✓' : '→'}</span>
           </button>
         `;
       }).join('');
@@ -816,7 +814,6 @@
 
         <p class="section-label">WHICH DAY IS TODAY?</p>
         ${days}
-        ${rowerNote}
       `;
     }
 
@@ -840,7 +837,7 @@
     }
 
     /**
-     * Weather screen — shown only on Wednesday when the rower is available and it's week 3+.
+     * Weather screen — shown only on Wednesday from week 3 on.
      * Gives a simple choice between going outside or using the indoor rowing backup.
      * No feel-rating question before this screen — weather choice happens first.
      */
@@ -1024,22 +1021,12 @@
           <button class="btn btn--ghost" onclick="setResetConfirm(false)">Cancel</button>
         </div>
       ` : `
-        <button class="btn btn--ghost" style="color:#3A3A3A; border-color:#222;" onclick="setResetConfirm(true)">Reset all data</button>
+        <button class="btn btn--ghost" style="color:var(--dimmer); border-color:var(--border);" onclick="setResetConfirm(true)">Reset all data</button>
       `;
 
       return `
         <button class="back-btn" onclick="goTo('home')">← Back</button>
         <h2 class="font-display" style="font-size:44px; color:var(--text); margin-bottom:28px;">SETTINGS</h2>
-
-        <div class="card" style="margin-bottom:12px;">
-          <p class="section-label" style="margin-bottom:14px;">ROWING MACHINE</p>
-          <button class="btn btn--ghost" style="margin-bottom:8px; ${state.rowerAvailable ? 'border-color:var(--green); color:var(--green);' : ''}" onclick="setRower(true)">
-            ${state.rowerAvailable ? '✓ ' : ''}Rower is set up and ready
-          </button>
-          <button class="btn btn--ghost" style="margin-bottom:0; ${!state.rowerAvailable ? 'border-color:var(--orange); color:var(--orange);' : ''}" onclick="setRower(false)">
-            ${!state.rowerAvailable ? '✓ ' : ''}Rower not yet available
-          </button>
-        </div>
 
         <div class="card" style="margin-bottom:12px;">
           <p class="section-label">CURRENT WEEK</p>
@@ -1078,7 +1065,6 @@
     function render() {
       const app = document.getElementById('app');
       const screens = {
-        loading:    () => '<p style="color:#333;font-family:monospace;padding:40px 20px;">Loading...</p>',
         onboarding: screenOnboarding,
         home:       screenHome,
         weather:    screenWeather,
@@ -1111,10 +1097,9 @@
       render();
     }
 
-    /** Called once on first launch to set rower status and save initial state */
-    function onboardingChoose(rowerAvailable) {
+    /** Called once on first launch to save initial state */
+    function onboardingChoose() {
       state.week = 1;
-      state.rowerAvailable = rowerAvailable;
       state.sessions = {};
       state.screen = 'home';
       saveState(state);
@@ -1129,10 +1114,9 @@
       state.prevSession = prev;
       state.sessionFelt = null;
 
-      // Wednesday gets a weather check first when the rower is available and it's week 3+.
+      // Wednesday gets a weather check first from week 3 on.
       // In weeks 1-2 Wednesday is a walk (outdoor only), so no weather screen needed then.
-      // Before week 3 the rower isn't in the plan yet either way.
-      if (day === 'wednesday' && state.rowerAvailable && state.week >= 3) {
+      if (day === 'wednesday' && state.week >= 3) {
         state.screen = 'weather';
         render();
         return;
@@ -1187,8 +1171,8 @@
      * felt: the feel rating from the previous session (or null)
      */
     function _startSession(felt) {
-      state.workout = buildWorkout(state.selectedDay, state.week, state.rowerAvailable, felt);
-      const type = getWorkoutType(state.selectedDay, state.week, state.rowerAvailable);
+      state.workout = buildWorkout(state.selectedDay, state.week, felt);
+      const type = getWorkoutType(state.selectedDay, state.week);
 
       // Build checklists with id numbers for the toggle handler
       state.preChecks  = PRE_ITEMS[type].map((text, i) => ({ id: i, text, checked: false }));
@@ -1236,13 +1220,6 @@
       goTo('home');
     }
 
-    /** Toggle rower availability (from settings) */
-    function setRower(available) {
-      state.rowerAvailable = available;
-      saveState(state);
-      render();
-    }
-
     /** Show/hide the reset confirmation (from settings) */
     function setResetConfirm(val) {
       state.resetConfirm = val;
@@ -1253,7 +1230,7 @@
     function doReset() {
       localStorage.removeItem(STORAGE_KEY);
       state = {
-        screen: 'onboarding', week: 1, rowerAvailable: false, sessions: {},
+        screen: 'onboarding', week: 1, sessions: {},
         selectedDay: null, prevSession: null, workout: null,
         preChecks: [], postChecks: [], sessionFelt: null,
         weekCompleted: false, resetConfirm: false, weatherBackup: false
